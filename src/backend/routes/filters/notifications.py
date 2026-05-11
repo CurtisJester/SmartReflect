@@ -4,13 +4,13 @@ from src.backend.db.db import get_db
 from pydantic import BaseModel, Field
 
 
-router = APIRouter()
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 class NotificationsFilter(BaseModel):
     min_notifications: Annotated[int, Query(ge=0, le=10000)] = Field(default=0, description="Minimum number of notifications")
     max_notifications: Annotated[int, Query(ge=0, le=10000)] = Field(default=10000, description="Maximum number of notifications")
 
-@router.get("/notifications_between")
+@router.get("/between")
 def get_notifications_between(filter_query: Annotated[NotificationsFilter, Query()], conn = Depends(get_db)):
     """
     Get the smartphone usage data for users within the specified notification range.

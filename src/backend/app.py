@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.backend.db.db import init_db
 from src.backend.routes import router as routes_router
-from src.backend.routes.filters import age_router, sleep_router, notifications_router
 from pathlib import Path
 
 
@@ -36,7 +35,4 @@ def get_app(data_csv_path: Path) -> FastAPI:
 
     # Setup Routes /src/backend/routes
     app.include_router(routes_router)
-    app.include_router(age_router)
-    app.include_router(sleep_router)
-    app.include_router(notifications_router)
     return app

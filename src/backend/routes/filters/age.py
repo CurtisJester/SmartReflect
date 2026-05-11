@@ -4,13 +4,13 @@ from src.backend.db.db import get_db
 from pydantic import BaseModel, Field
 
 
-router = APIRouter()
+router = APIRouter(prefix="/age", tags=["age"])
 
 class AgeFilter(BaseModel):
     min_age: Annotated[int, Query(ge=0, le=120)] = Field(default=0, description="Minimum age")
     max_age: Annotated[int, Query(ge=0, le=120)] = Field(default=120, description="Maximum age")
 
-@router.get("/age_between")
+@router.get("/between")
 def get_age_between(filter_query: Annotated[AgeFilter, Query()], conn = Depends(get_db)):
     """
     Get the smartphone usage data for users within the specified age range.
@@ -26,7 +26,7 @@ def get_age_between(filter_query: Annotated[AgeFilter, Query()], conn = Depends(
     cursor.execute("SELECT * FROM smartphone_usage WHERE age BETWEEN ? AND ?", (filter_query.min_age, filter_query.max_age))
     return cursor.fetchall()
 
-@router.get("/age/{age}")
+@router.get("/{age}")
 def get_age(age: int, conn = Depends(get_db)):
     """
     Get the smartphone usage data for users with the specified age.
