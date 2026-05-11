@@ -2,17 +2,25 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
 import { getAddictionBreakdown } from '../api/stats';
 
-const ADDICTED_COLOR = 'var(--accent)';
-const NON_ADDICTED_COLOR = 'var(--accent-border)';
+const AGE_COLORS = [
+  '#a98bdc',
+  '#5182ec',
+  '#afc97f',
+  '#059669',
+  '#ca8a04',
+  '#ea580c',
+  '#dc2626',
+  '#be185d',
+];
 
 function AddictionBreakdown() {
   const { data, isLoading, error } = useQuery({
@@ -27,7 +35,12 @@ function AddictionBreakdown() {
     level: it.level,
     pct: Number(it.pct_of_total.toFixed(2)),
     count: it.count,
-    addicted: it.is_addicted_designation,
+    ...Object.fromEntries(
+      Object.entries(it.age_counts).map(([ageRange, count]) => [
+        ageRange,
+        Number(((count / data.total_users) * 100).toFixed(2)),
+      ]),
+    ),
   }));
 
   const designation = (data.addicted_designation || []).join(' or ');
@@ -55,19 +68,22 @@ function AddictionBreakdown() {
           />
           <YAxis dataKey="level" type="category" tick={{ fontSize: 12 }} width={80} />
           <Tooltip
-            formatter={(value, _name, item) => {
-              const count = item?.payload?.count;
-              return [`${value}%${count != null ? ` (${count.toLocaleString()})` : ''}`, '% of total'];
+            formatter={(value, name, item) => {
+              const level = item?.payload?.level;
+              const ageCount =
+                data.items.find((it) => it.level === level)?.age_counts?.[name] || 0;
+              return [`${value}% (${ageCount.toLocaleString()})`, name];
             }}
           />
-          <Bar dataKey="pct">
-            {chartData.map((entry) => (
-              <Cell
-                key={entry.level}
-                fill={entry.addicted ? ADDICTED_COLOR : NON_ADDICTED_COLOR}
-              />
-            ))}
-          </Bar>
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {data.age_ranges.map((ageRange, index) => (
+            <Bar
+              key={ageRange}
+              dataKey={ageRange}
+              stackId="addiction-age"
+              fill={AGE_COLORS[index % AGE_COLORS.length]}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from './components/Dashboard';
+import AppNav from './components/AppNav';
+import DeepDive from './components/DeepDive';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,10 +14,31 @@ const queryClient = new QueryClient({
   },
 });
 
+const routes = {
+  '/': Dashboard,
+  '/deep-dive': DeepDive,
+};
+
 function App() {
+  const [path, setPath] = useState(window.location.pathname);
+  const ActivePage = routes[path] || Dashboard;
+
+  useEffect(() => {
+    const onPopState = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const navigate = (nextPath) => {
+    if (nextPath === path) return;
+    window.history.pushState({}, '', nextPath);
+    setPath(nextPath);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Dashboard />
+      <AppNav currentPath={path} onNavigate={navigate} />
+      <ActivePage />
     </QueryClientProvider>
   );
 }

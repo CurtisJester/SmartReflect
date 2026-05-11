@@ -11,10 +11,12 @@ class HistogramBin(BaseModel):
     bin_start: float
     bin_end: float
     count: int
+    age_counts: dict[str, int]
 
 
 class HistogramResponse(BaseModel):
     column: str
+    age_ranges: list[str]
     bins: list[HistogramBin]
 
 
@@ -31,56 +33,64 @@ class ScatterResponse(BaseModel):
 
 @router.get("/screen_time_histogram", response_model=HistogramResponse)
 def get_screen_time_histogram(
-    bins: Annotated[int, Query(ge=2, le=50)] = 10,
     conn = Depends(get_db),
 ):
     """
-    Return a histogram of daily_screen_time_hours with the requested number of bins.
+    Return a histogram of daily_screen_time_hours in 2-hour buckets.
     """
     column = "daily_screen_time_hours"
+    bucket_width = 2
     cursor = conn.cursor()
     cursor.execute(
-        f"SELECT MIN({column}) AS min_v, MAX({column}) AS max_v FROM smartphone_usage"
+        f"SELECT MAX({column}) AS max_v, MAX(age) AS max_age FROM smartphone_usage"
     )
     row = cursor.fetchone()
-    min_v = float(row["min_v"] or 0.0)
     max_v = float(row["max_v"] or 0.0)
+    max_age = int(row["max_age"] or 0)
+    bucket_count = max(1, int(max_v // bucket_width) + 1)
+    age_upper_bound = max(19, ((max_age // 10) * 10) + 9)
+    age_ranges = [
+        f"{start}-{19 if start == 0 else start + 9}"
+        for start in [0, *range(20, age_upper_bound + 1, 10)]
+    ]
 
-    if max_v <= min_v:
-        # Degenerate case: single bucket
-        cursor.execute("SELECT COUNT(*) AS c FROM smartphone_usage")
-        c = cursor.fetchone()["c"] or 0
-        return HistogramResponse(
-            column=column,
-            bins=[HistogramBin(bin_start=min_v, bin_end=max_v, count=c)],
-        )
-
-    width = (max_v - min_v) / bins
-
-    # Compute bucket index server-side; clamp the max value into the last bucket.
     cursor.execute(
         f"""
         SELECT
-            MIN(CAST((({column} - ?) / ?) AS INT), ?) AS bucket,
+            CAST({column} / ? AS INT) AS bucket,
+            CASE
+                WHEN age BETWEEN 0 AND 19 THEN '0-19'
+                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+            END AS age_range,
             COUNT(*) AS c
         FROM smartphone_usage
-        GROUP BY bucket
-        ORDER BY bucket
+        WHERE {column} IS NOT NULL AND age IS NOT NULL
+        GROUP BY bucket, age_range
+        ORDER BY bucket, age_range
         """,
-        (min_v, width, bins - 1),
+        (bucket_width,),
     )
-    counts_by_bucket = {int(r["bucket"]): int(r["c"]) for r in cursor.fetchall()}
+    counts_by_bucket: dict[int, dict[str, int]] = {}
+    for row in cursor.fetchall():
+        bucket = int(row["bucket"])
+        age_range = str(row["age_range"])
+        counts_by_bucket.setdefault(bucket, {})[age_range] = int(row["c"])
 
     out_bins: list[HistogramBin] = []
-    for i in range(bins):
+    for i in range(bucket_count):
+        age_counts = {
+            age_range: counts_by_bucket.get(i, {}).get(age_range, 0)
+            for age_range in age_ranges
+        }
         out_bins.append(
             HistogramBin(
-                bin_start=min_v + i * width,
-                bin_end=min_v + (i + 1) * width,
-                count=counts_by_bucket.get(i, 0),
+                bin_start=i * bucket_width,
+                bin_end=(i + 1) * bucket_width,
+                count=sum(age_counts.values()),
+                age_counts=age_counts,
             )
         )
-    return HistogramResponse(column=column, bins=out_bins)
+    return HistogramResponse(column=column, age_ranges=age_ranges, bins=out_bins)
 
 
 @router.get("/scatter_sample", response_model=ScatterResponse)

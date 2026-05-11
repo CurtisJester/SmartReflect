@@ -5,23 +5,36 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
 import { getScreenTimeHistogram } from '../api/stats';
 
+const AGE_COLORS = [
+  '#a98bdc',
+  '#5182ec',
+  '#afc97f',
+  '#059669',
+  '#ca8a04',
+  '#ea580c',
+  '#dc2626',
+  '#be185d',
+];
+
 function ScreenTimeHistogram() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['screen_time_histogram', 10],
-    queryFn: () => getScreenTimeHistogram(10),
+    queryKey: ['screen_time_histogram'],
+    queryFn: getScreenTimeHistogram,
   });
 
   if (isLoading) return <div className="card chart-card">Loading histogram…</div>;
   if (error) return <div className="card chart-card">Error: {error.message}</div>;
 
   const chartData = data.bins.map((b) => ({
-    label: `${b.bin_start.toFixed(1)}–${b.bin_end.toFixed(1)}`,
+    label: `${b.bin_start}-${b.bin_end}hrs`,
     count: b.count,
+    ...b.age_counts,
   }));
 
   return (
@@ -33,8 +46,22 @@ function ScreenTimeHistogram() {
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip />
-          <Bar dataKey="count" fill="var(--accent)" />
+          <Tooltip
+            formatter={(value, name, item) => {
+              const total = item?.payload?.count || 0;
+              const pct = total ? ((Number(value) / total) * 100).toFixed(1) : '0.0';
+              return [`${Number(value).toLocaleString()} (${pct}%)`, name];
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {data.age_ranges.map((ageRange, index) => (
+            <Bar
+              key={ageRange}
+              dataKey={ageRange}
+              stackId="screen-time-age"
+              fill={AGE_COLORS[index % AGE_COLORS.length]}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>

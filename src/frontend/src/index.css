@@ -110,6 +110,44 @@ code {
   background: var(--code-bg);
 }
 
+.app-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.app-brand {
+  color: var(--text-h);
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: -0.2px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-link {
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
 /* ===== Dashboard ===== */
 
 .dashboard {
@@ -213,4 +251,12 @@ code {
 
 .chart-wide {
   grid-column: 1 / -1;
+}
+
+.empty-page-card {
+  max-width: 680px;
+}
+
+.empty-page-card p {
+  color: var(--text);
 }
