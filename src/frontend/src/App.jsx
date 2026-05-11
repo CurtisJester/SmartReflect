@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from './components/Dashboard';
 import AppNav from './components/AppNav';
 import DeepDive from './components/DeepDive';
+import Explore from './components/Explore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,6 +18,7 @@ const queryClient = new QueryClient({
 const routes = {
   '/': Dashboard,
   '/deep-dive': DeepDive,
+  '/explore': Explore,
 };
 
 function App() {

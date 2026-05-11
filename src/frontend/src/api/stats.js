@@ -12,8 +12,11 @@ async function getJson(path) {
 
 export const getSummary = () => getJson('/stats/summary');
 
-export const getScreenTimeHistogram = (bins = 10) =>
-  getJson(`/stats/screen_time_histogram?bins=${bins}`);
+export const getMostAddicted = () => getJson('/stats/most_addicted');
+
+export const getLeastAddicted = () => getJson('/stats/least_addicted');
+
+export const getScreenTimeHistogram = () => getJson('/stats/screen_time_histogram');
 
 export const getAddictionBreakdown = () => getJson('/stats/addiction_breakdown');
 
@@ -21,3 +24,12 @@ export const getAgeBreakdown = () => getJson('/stats/age_breakdown');
 
 export const getScatterSample = (n = 500) =>
   getJson(`/stats/scatter_sample?n=${n}`);
+
+export const getExploreRows = (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== '' && value != null) params.set(key, value);
+  });
+  const query = params.toString();
+  return getJson(`/explore${query ? `?${query}` : ''}`);
+};

@@ -1,6 +1,7 @@
 const navItems = [
   { path: '/', label: 'Dashboard' },
   { path: '/deep-dive', label: 'Deep Dive' },
+  { path: '/explore', label: 'Explore' },
 ];
 
 function AppNav({ currentPath, onNavigate }) {

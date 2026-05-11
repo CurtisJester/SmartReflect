@@ -1,8 +1,28 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from src.backend.db.db import get_db
 
 
 router = APIRouter()
+
+
+_EXPLORE_COLUMNS = [
+    "transaction_id",
+    "user_id",
+    "age",
+    "gender",
+    "daily_screen_time_hours",
+    "social_media_hours",
+    "gaming_hours",
+    "work_study_hours",
+    "sleep_hours",
+    "notifications_per_day",
+    "app_opens_per_day",
+    "weekend_screen_time",
+    "stress_level",
+    "academic_work_impact",
+    "addiction_level",
+    "addicted_label",
+]
 
 
 @router.get("/")
@@ -56,3 +76,45 @@ async def get_100(conn = Depends(get_db)):
     cursor.execute("SELECT * FROM smartphone_usage LIMIT 100")
     users = cursor.fetchall()
     return users
+
+
+@router.get("/explore")
+async def explore(
+    gender: str | None = None,
+    stress_level: str | None = None,
+    academic_work_impact: str | None = None,
+    addiction_level: str | None = None,
+    addicted_label: int | None = Query(default=None, ge=0, le=1),
+    limit: int = Query(default=100, ge=1, le=500),
+    conn = Depends(get_db),
+):
+    filters = []
+    values = []
+    for column, value in [
+        ("gender", gender),
+        ("stress_level", stress_level),
+        ("academic_work_impact", academic_work_impact),
+        ("addiction_level", addiction_level),
+        ("addicted_label", addicted_label),
+    ]:
+        if value is not None and value != "":
+            filters.append(f"{column} = ?")
+            values.append(value)
+
+    where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+    cursor = conn.cursor()
+    cursor.execute(
+        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY transaction_id LIMIT ?",
+        (*values, limit),
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute(f"SELECT COUNT(*) AS c FROM smartphone_usage {where_clause}", values)
+    total = int(cursor.fetchone()["c"] or 0)
+
+    return {
+        "columns": _EXPLORE_COLUMNS,
+        "rows": rows,
+        "total": total,
+        "limit": limit,
+    }
