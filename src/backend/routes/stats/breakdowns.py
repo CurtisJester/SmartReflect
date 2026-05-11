@@ -29,6 +29,17 @@ class BreakdownResponse(BaseModel):
     addicted_designation: list[str]
 
 
+class AgeBreakdownItem(BaseModel):
+    age_range: str
+    count: int
+    pct_of_total: float
+
+
+class AgeBreakdownResponse(BaseModel):
+    items: list[AgeBreakdownItem]
+    total_users: int
+
+
 @router.get("/addiction_breakdown", response_model=BreakdownResponse)
 def get_addiction_breakdown(conn = Depends(get_db)):
     """
@@ -93,3 +104,43 @@ def get_addiction_breakdown(conn = Depends(get_db)):
             lvl for lvl in _ADDICTION_ORDER if lvl.lower() in _ADDICTED_LEVELS
         ],
     )
+
+
+@router.get("/age_breakdown", response_model=AgeBreakdownResponse)
+def get_age_breakdown(conn = Depends(get_db)):
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS c, MAX(age) AS max_age FROM smartphone_usage")
+    summary = cursor.fetchone()
+    total_users = int(summary["c"] or 0)
+    max_age = int(summary["max_age"] or 0)
+    upper_bound = max(19, ((max_age // 10) * 10) + 9)
+
+    cursor.execute(
+        """
+        SELECT
+            CASE
+                WHEN age BETWEEN 0 AND 19 THEN '0-19'
+                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+            END AS age_range,
+            CASE
+                WHEN age BETWEEN 0 AND 19 THEN 0
+                ELSE CAST(age / 10 AS INT)
+            END AS sort_key,
+            COUNT(*) AS c
+        FROM smartphone_usage
+        WHERE age IS NOT NULL
+        GROUP BY age_range, sort_key
+        ORDER BY sort_key
+        """
+    )
+    counts_by_range = {str(r["age_range"]): int(r["c"]) for r in cursor.fetchall()}
+
+    items: list[AgeBreakdownItem] = []
+    for start in [0, *range(20, upper_bound + 1, 10)]:
+        end = 19 if start == 0 else start + 9
+        label = f"{start}-{end}"
+        count = counts_by_range.get(label, 0)
+        pct = (count / total_users * 100.0) if total_users else 0.0
+        items.append(AgeBreakdownItem(age_range=label, count=count, pct_of_total=pct))
+
+    return AgeBreakdownResponse(items=items, total_users=total_users)

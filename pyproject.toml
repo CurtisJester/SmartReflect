@@ -1,5 +1,5 @@
 [project]
-name = "smartphone-use"
+name = "smartreflect"
 version = "0.1.0"
 description = "Smartphone usage visualization and analysis webapp"
 readme = "README.md"
@@ -11,6 +11,6 @@ dependencies = [
 ]
 
 [config]
-dataset_path = "/home/cjester/Code/smartphone_use/data/dataset.csv"
-database_path = "/home/cjester/Code/smartphone_use/backend/db/database.db"
+dataset_path = "/home/cjester/Code/SmartReflect/data/dataset.csv"
+database_path = "/home/cjester/Code/SmartReflect/backend/db/database.db"
 

@@ -3,6 +3,7 @@ import { getSummary } from '../api/stats';
 import KpiCard from './KpiCard';
 import ScreenTimeHistogram from './ScreenTimeHistogram';
 import AddictionBreakdown from './AddictionBreakdown';
+import AgeBreakdown from './AgeBreakdown';
 import ScreenTimeSleepScatter from './ScreenTimeSleepScatter';
 
 function formatNumber(n, digits = 0) {
@@ -29,8 +30,8 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Smartphone Use Dashboard</h1>
-        <p>An overview of the smartphone-use dataset.</p>
+        <h1>SmartReflect on Smartphone Use</h1>
+        <p>Explore a dataset of smartphone use and overuse.</p>
       </header>
 
       <section className="kpi-row">
@@ -57,6 +58,7 @@ function Dashboard() {
       <section className="chart-grid">
         <ScreenTimeHistogram />
         <AddictionBreakdown />
+        <AgeBreakdown />
         <ScreenTimeSleepScatter />
       </section>
     </div>

@@ -17,5 +17,7 @@ export const getScreenTimeHistogram = (bins = 10) =>
 
 export const getAddictionBreakdown = () => getJson('/stats/addiction_breakdown');
 
+export const getAgeBreakdown = () => getJson('/stats/age_breakdown');
+
 export const getScatterSample = (n = 500) =>
   getJson(`/stats/scatter_sample?n=${n}`);
