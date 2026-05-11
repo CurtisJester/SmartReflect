@@ -30,7 +30,7 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>SmartReflect on Smartphone Use</h1>
+        <h1>Reflect on Smartphone Use</h1>
         <p>Explore a dataset of smartphone use and overuse.</p>
       </header>
 
