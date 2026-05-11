@@ -1,0 +1,16 @@
+[project]
+name = "smartphone-use"
+version = "0.1.0"
+description = "Smartphone usage visualization and analysis webapp"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.136.1",
+    "pandas>=3.0.2",
+    "pysqlite3>=0.6.0",
+]
+
+[config]
+dataset_path = "/home/cjester/Code/smartphone_use/data/dataset.csv"
+database_path = "/home/cjester/Code/smartphone_use/backend/db/database.db"
+
