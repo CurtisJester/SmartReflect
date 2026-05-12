@@ -83,6 +83,8 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
     row = cursor.fetchone()
     cohort_users = int(row["cohort_users"] or 0)
 
+    _ADDICTION_ORDER = ["Mild", "Moderate", "Severe"]
+
     cursor.execute(
         f"""
         SELECT addiction_level AS label, COUNT(*) AS c
@@ -91,18 +93,22 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
           AND addiction_level IS NOT NULL
           AND LOWER(TRIM(addiction_level)) != 'none'
         GROUP BY addiction_level
-        ORDER BY c DESC
         """,
         (threshold,),
     )
-    addiction_breakdown = [
-        MostAddictedBreakdownItem(
-            label=str(item["label"]),
-            count=int(item["c"]),
-            pct_of_cohort=(int(item["c"]) / cohort_users * 100.0) if cohort_users else 0.0,
-        )
-        for item in cursor.fetchall()
-    ]
+    raw_addiction = {str(r["label"]).lower(): (str(r["label"]), int(r["c"])) for r in cursor.fetchall()}
+    addiction_breakdown = []
+    for canonical in _ADDICTION_ORDER:
+        entry = raw_addiction.get(canonical.lower())
+        if entry is not None:
+            label, count = entry
+            addiction_breakdown.append(
+                MostAddictedBreakdownItem(
+                    label=label,
+                    count=count,
+                    pct_of_cohort=(count / cohort_users * 100.0) if cohort_users else 0.0,
+                )
+            )
 
     cursor.execute(
         f"""

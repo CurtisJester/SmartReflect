@@ -78,17 +78,8 @@ async def get_100(conn = Depends(get_db)):
     return users
 
 
-@router.get("/explore")
-async def explore(
-    gender: str | None = None,
-    stress_level: str | None = None,
-    academic_work_impact: str | None = None,
-    addiction_level: str | None = None,
-    addicted_label: int | None = Query(default=None, ge=0, le=1),
-    limit: int = Query(default=100, ge=1, le=500),
-    sort_by: str | None = None,
-    sort_dir: str | None = None,
-    conn = Depends(get_db),
+def _build_explore_query(
+    gender, stress_level, academic_work_impact, addiction_level, addicted_label, sort_by, sort_dir
 ):
     filters = []
     values = []
@@ -102,15 +93,54 @@ async def explore(
         if value is not None and value != "":
             filters.append(f"{column} = ?")
             values.append(value)
-
     where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
     order_col = sort_by if sort_by in _EXPLORE_COLUMNS else "transaction_id"
     order_dir = "DESC" if sort_dir == "desc" else "ASC"
+    return where_clause, values, order_col, order_dir
 
+
+@router.get("/explore/export")
+async def explore_export(
+    gender: str | None = None,
+    stress_level: str | None = None,
+    academic_work_impact: str | None = None,
+    addiction_level: str | None = None,
+    addicted_label: int | None = Query(default=None, ge=0, le=1),
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
+    conn = Depends(get_db),
+):
+    where_clause, values, order_col, order_dir = _build_explore_query(
+        gender, stress_level, academic_work_impact, addiction_level, addicted_label, sort_by, sort_dir
+    )
     cursor = conn.cursor()
     cursor.execute(
-        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir} LIMIT ?",
-        (*values, limit),
+        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir}",
+        values,
+    )
+    return {"rows": [dict(row) for row in cursor.fetchall()]}
+
+
+@router.get("/explore")
+async def explore(
+    gender: str | None = None,
+    stress_level: str | None = None,
+    academic_work_impact: str | None = None,
+    addiction_level: str | None = None,
+    addicted_label: int | None = Query(default=None, ge=0, le=1),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
+    conn = Depends(get_db),
+):
+    where_clause, values, order_col, order_dir = _build_explore_query(
+        gender, stress_level, academic_work_impact, addiction_level, addicted_label, sort_by, sort_dir
+    )
+    cursor = conn.cursor()
+    cursor.execute(
+        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir} LIMIT ? OFFSET ?",
+        (*values, limit, offset),
     )
     rows = [dict(row) for row in cursor.fetchall()]
 

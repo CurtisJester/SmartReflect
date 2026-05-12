@@ -27,11 +27,20 @@ export const getAgeBreakdown = () => getJson('/stats/age_breakdown');
 export const getScatterSample = (n = 500) =>
   getJson(`/stats/scatter_sample?n=${n}`);
 
-export const getExploreRows = (filters = {}) => {
+function buildExploreParams(filters) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== '' && value != null) params.set(key, value);
   });
-  const query = params.toString();
+  return params.toString();
+}
+
+export const getExploreRows = (filters = {}) => {
+  const query = buildExploreParams(filters);
   return getJson(`/explore${query ? `?${query}` : ''}`);
+};
+
+export const getExploreExport = (filters = {}) => {
+  const query = buildExploreParams(filters);
+  return getJson(`/explore/export${query ? `?${query}` : ''}`);
 };

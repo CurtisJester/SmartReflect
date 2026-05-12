@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getExploreRows } from '../api/stats';
+import { getExploreRows, getExploreExport } from '../api/stats';
 
 const columnLabels = {
   transaction_id: 'Transaction',
@@ -63,30 +63,42 @@ function SortIndicator({ column, sort }) {
   );
 }
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250];
+
 function Explore() {
-  const [filters, setFilters] = useState({ limit: 100 });
+  const [filters, setFilters] = useState({});
   const [visibleColumns, setVisibleColumns] = useState(defaultColumns);
   const [sort, setSort] = useState({ column: null, dir: null });
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [columnsOpen, setColumnsOpen] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
+
+  const offset = page * pageSize;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['explore', filters, sort],
+    queryKey: ['explore', filters, sort, page, pageSize],
     queryFn: () =>
       getExploreRows({
         ...filters,
+        limit: pageSize,
+        offset,
         ...(sort.column ? { sort_by: sort.column, sort_dir: sort.dir } : {}),
       }),
   });
 
   const availableColumns = data?.columns || Object.keys(columnLabels);
   const rows = data?.rows || [];
+  const total = data?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
   const activeFilterCount = useMemo(
-    () => Object.entries(filters).filter(([key, value]) => key !== 'limit' && value).length,
+    () => Object.values(filters).filter(Boolean).length,
     [filters],
   );
 
   const toggleFilter = (key, value) => {
+    setPage(0);
     setFilters((current) => ({
       ...current,
       [key]: current[key] === value ? '' : value,
@@ -99,13 +111,51 @@ function Explore() {
     );
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const exportFilters = {
+        ...filters,
+        ...(sort.column ? { sort_by: sort.column, sort_dir: sort.dir } : {}),
+      };
+      const { rows: allRows } = await getExploreExport(exportFilters);
+      const header = visibleColumns.map((col) => columnLabels[col] || col);
+      const body = allRows.map((row) =>
+        visibleColumns.map((col) => {
+          const val = formatCell(row[col]);
+          return /[,"\n]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val;
+        }),
+      );
+      const csv = [header, ...body].map((r) => r.join(',')).join('\n');
+      const name = window.prompt('Filename:', 'explore.csv');
+      if (!name) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = name.endsWith('.csv') ? name : `${name}.csv`;
+      a.click();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleSort = (column) => {
+    setPage(0);
     setSort((current) => {
       if (current.column !== column) return { column, dir: 'asc' };
       if (current.dir === 'asc') return { column, dir: 'desc' };
       return { column: null, dir: null };
     });
   };
+
+  const rowCountLabel = useMemo(() => {
+    if (isLoading) return 'Loading…';
+    if (!rows.length) return '0 rows';
+    const from = (offset + 1).toLocaleString();
+    const to = (offset + rows.length).toLocaleString();
+    return `${from}–${to} of ${total.toLocaleString()} rows`;
+  }, [isLoading, rows.length, offset, total, pageSize]);
 
   return (
     <div className="dashboard">
@@ -118,7 +168,7 @@ function Explore() {
         <div className="explore-panel-header">
           <h2>Filters</h2>
           <div className="explore-panel-header-right">
-            <button className="chip" type="button" onClick={() => setFilters({ limit: filters.limit })}>
+            <button className="chip" type="button" onClick={() => { setPage(0); setFilters({}); }}>
               Clear filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
             </button>
             <button
@@ -190,45 +240,83 @@ function Explore() {
       <section className="card explore-table-card">
         <div className="explore-panel-header">
           <h2>Data</h2>
-          <span>
-            {isLoading ? 'Loading…' : `${rows.length.toLocaleString()} of ${(data?.total || 0).toLocaleString()} rows`}
-          </span>
+          <div className="explore-panel-header-right">
+            <span>{rowCountLabel}</span>
+            <select
+              className="page-size-select"
+              value={pageSize}
+              onChange={(e) => { setPage(0); setPageSize(Number(e.target.value)); }}
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n} per page</option>
+              ))}
+            </select>
+            <button
+              className="chip"
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting || isLoading || !!error}
+            >
+              {isExporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+          </div>
         </div>
         {error ? <div className="kpi-error">{error.message}</div> : null}
         {!error ? (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {visibleColumns.map((column) => (
-                    <th key={column} className="sortable-th" onClick={() => handleSort(column)}>
-                      {columnLabels[column] || column}
-                      <SortIndicator column={column} sort={sort} />
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+          <>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan={visibleColumns.length || 1}>Loading…</td>
+                    {visibleColumns.map((column) => (
+                      <th key={column} className="sortable-th" onClick={() => handleSort(column)}>
+                        {columnLabels[column] || column}
+                        <SortIndicator column={column} sort={sort} />
+                      </th>
+                    ))}
                   </tr>
-                ) : rows.length ? (
-                  rows.map((row) => (
-                    <tr key={row.transaction_id}>
-                      {visibleColumns.map((column) => (
-                        <td key={column}>{formatCell(row[column])}</td>
-                      ))}
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={visibleColumns.length || 1}>Loading…</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={visibleColumns.length || 1}>No rows match the selected filters.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : rows.length ? (
+                    rows.map((row) => (
+                      <tr key={row.transaction_id}>
+                        {visibleColumns.map((column) => (
+                          <td key={column}>{formatCell(row[column])}</td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={visibleColumns.length || 1}>No rows match the selected filters.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="table-pager">
+              <button
+                className="chip"
+                type="button"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 0 || isLoading}
+              >
+                ← Prev
+              </button>
+              <span>Page {page + 1} of {totalPages}</span>
+              <button
+                className="chip"
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1 || isLoading}
+              >
+                Next →
+              </button>
+            </div>
+          </>
         ) : null}
       </section>
     </div>
