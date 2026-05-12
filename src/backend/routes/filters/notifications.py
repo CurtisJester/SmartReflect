@@ -23,5 +23,5 @@ def get_notifications_between(filter_query: Annotated[NotificationsFilter, Query
         List of smartphone usage records for users within the specified notification range
     """
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM smartphone_usage WHERE notifications_per_day BETWEEN ? AND ?", (filter_query.min_notifications, filter_query.max_notifications))
+    cursor.execute("SELECT * FROM smartphone_usage WHERE notifications_per_day BETWEEN %s AND %s", (filter_query.min_notifications, filter_query.max_notifications))
     return cursor.fetchall()

@@ -16,14 +16,15 @@ def get_app(data_csv_path: Path) -> FastAPI:
     Returns:
         Configured FastAPI application
     """
+    # TODO: I don't think we need the context manager given a Neon DB in the cloud now
+    # @asynccontextmanager
+    # async def lifespan(app: FastAPI):
+    #     # Initialize database on startup
+    #     init_db(data_csv_path)
+    #     yield
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        # Initialize database on startup
-        init_db(data_csv_path)
-        yield
-
-    app = FastAPI(lifespan=lifespan)
+    # app = FastAPI(lifespan=lifespan)
+    app = FastAPI()
 
     # Add CORS middleware
     app.add_middleware(

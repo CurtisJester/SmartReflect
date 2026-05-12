@@ -57,10 +57,10 @@ def get_screen_time_histogram(
     cursor.execute(
         f"""
         SELECT
-            CAST({column} / ? AS INT) AS bucket,
+            CAST({column} / %s AS INT) AS bucket,
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN '0-19'
-                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+                ELSE CAST((age / 10) * 10 AS TEXT) || '-' || CAST(((age / 10) * 10 + 9) AS TEXT)
             END AS age_range,
             COUNT(*) AS c
         FROM smartphone_usage
@@ -107,7 +107,7 @@ def get_scatter_sample(
         SELECT daily_screen_time_hours AS x, sleep_hours AS y
         FROM smartphone_usage
         ORDER BY RANDOM()
-        LIMIT ?
+        LIMIT %s
         """,
         (n,),
     )

@@ -26,7 +26,7 @@ def get_sleep_between(filter_query: Annotated[SleepFilter, Query()], conn = Depe
     """
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM smartphone_usage WHERE sleep_hours BETWEEN ? AND ?",
+        "SELECT * FROM smartphone_usage WHERE sleep_hours BETWEEN %s AND %s",
         (filter_query.min_sleep, filter_query.max_sleep),
     )
     return cursor.fetchall()

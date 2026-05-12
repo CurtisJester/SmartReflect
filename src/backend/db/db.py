@@ -1,18 +1,24 @@
-from sqlite3 import connect, Row
+import os
 from pathlib import Path
+
 import pandas as pd
-from config import get_database_path
+import psycopg2
+import psycopg2.extras
+from sqlalchemy import create_engine
+
+
+def _get_connection_string() -> str:
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL environment variable is not set")
+    return url
 
 
 def get_db():
-    """
-    Get a database connection from the database filepath provided.
-    
-    Returns:
-        A database connection
-    """
-    conn = connect('src/backend/db/database.db', check_same_thread=False)
-    conn.row_factory = Row
+    conn = psycopg2.connect(
+        _get_connection_string(),
+        cursor_factory=psycopg2.extras.RealDictCursor,
+    )
     try:
         yield conn
     finally:
@@ -20,11 +26,11 @@ def get_db():
 
 
 def init_db(csv_data_path: Path):
-    try: 
+    try:
         df = pd.read_csv(csv_data_path)
-        conn = connect('src/backend/db/database.db')
-        df.to_sql("smartphone_usage", conn, if_exists="replace", index=False)
-        conn.close()
+        engine = create_engine(_get_connection_string())
+        with engine.begin() as conn:
+            df.to_sql("smartphone_usage", conn, if_exists="replace", index=False)
     except Exception as e:
         print(f"Error initializing database: {e}")
         return False

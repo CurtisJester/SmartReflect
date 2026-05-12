@@ -23,7 +23,7 @@ def get_age_between(filter_query: Annotated[AgeFilter, Query()], conn = Depends(
         List of smartphone usage records for users within the specified age range
     """
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM smartphone_usage WHERE age BETWEEN ? AND ?", (filter_query.min_age, filter_query.max_age))
+    cursor.execute("SELECT * FROM smartphone_usage WHERE age BETWEEN %s AND %s", (filter_query.min_age, filter_query.max_age))
     return cursor.fetchall()
 
 @router.get("/{age}")
@@ -38,5 +38,5 @@ def get_age(age: int, conn = Depends(get_db)):
         List of smartphone usage records for users with the specified age
     """
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM smartphone_usage WHERE age = ?", (age,))
+    cursor.execute("SELECT * FROM smartphone_usage WHERE age = %s", (age,))
     return cursor.fetchall()

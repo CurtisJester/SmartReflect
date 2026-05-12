@@ -91,7 +91,7 @@ def _build_explore_query(
         ("addicted_label", addicted_label),
     ]:
         if value is not None and value != "":
-            filters.append(f"{column} = ?")
+            filters.append(f"{column} = %s")
             values.append(value)
     where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
     order_col = sort_by if sort_by in _EXPLORE_COLUMNS else "transaction_id"
@@ -139,7 +139,7 @@ async def explore(
     )
     cursor = conn.cursor()
     cursor.execute(
-        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir} LIMIT ? OFFSET ?",
+        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir} LIMIT %s OFFSET %s",
         (*values, limit, offset),
     )
     rows = [dict(row) for row in cursor.fetchall()]

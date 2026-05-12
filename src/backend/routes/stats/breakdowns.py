@@ -77,7 +77,7 @@ def get_addiction_breakdown(conn = Depends(get_db)):
             addiction_level AS level,
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN '0-19'
-                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+                ELSE CAST((age / 10) * 10 AS TEXT) || '-' || CAST(((age / 10) * 10 + 9) AS TEXT)
             END AS age_range,
             COUNT(*) AS c
         FROM smartphone_usage
@@ -161,7 +161,7 @@ def get_age_breakdown(conn = Depends(get_db)):
         SELECT
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN '0-19'
-                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+                ELSE CAST((age / 10) * 10 AS TEXT) || '-' || CAST(((age / 10) * 10 + 9) AS TEXT)
             END AS age_range,
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN 0

@@ -58,7 +58,7 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
             FROM smartphone_usage
             WHERE {filter_column} IS NOT NULL
             ORDER BY {filter_column} {order_direction}
-            LIMIT ?
+            LIMIT %s
         )
         """,
         (cohort_limit,),
@@ -76,7 +76,7 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
             AVG(notifications_per_day) AS avg_notifications_per_day,
             AVG(addicted_label) * 100.0 AS pct_addicted
         FROM smartphone_usage
-        WHERE {filter_column} {comparison_operator} ?
+        WHERE {filter_column} {comparison_operator} %s
         """,
         (threshold,),
     )
@@ -89,7 +89,7 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
         f"""
         SELECT addiction_level AS label, COUNT(*) AS c
         FROM smartphone_usage
-        WHERE {filter_column} {comparison_operator} ?
+        WHERE {filter_column} {comparison_operator} %s
           AND addiction_level IS NOT NULL
           AND LOWER(TRIM(addiction_level)) != 'none'
         GROUP BY addiction_level
@@ -115,7 +115,7 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
         SELECT
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN '0-19'
-                ELSE CAST((age / 10) * 10 AS INT) || '-' || CAST(((age / 10) * 10 + 9) AS INT)
+                ELSE CAST((age / 10) * 10 AS TEXT) || '-' || CAST(((age / 10) * 10 + 9) AS TEXT)
             END AS label,
             CASE
                 WHEN age BETWEEN 0 AND 19 THEN 0
@@ -123,7 +123,7 @@ def _get_cohort(conn, filter_column: str, order_direction: str, comparison_opera
             END AS sort_key,
             COUNT(*) AS c
         FROM smartphone_usage
-        WHERE {filter_column} {comparison_operator} ? AND age IS NOT NULL
+        WHERE {filter_column} {comparison_operator} %s AND age IS NOT NULL
         GROUP BY label, sort_key
         ORDER BY sort_key
         """,
