@@ -1,6 +1,6 @@
 // API helpers for the /stats/* dashboard endpoints.
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.FASTAPI_CLOUD_URL || 'http://localhost:8000';
 
 async function getJson(path) {
   const res = await fetch(`${API_BASE}${path}`);
