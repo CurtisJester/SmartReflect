@@ -31,7 +31,7 @@ def get_app(data_csv_path: Path) -> FastAPI:
         CORSMiddleware,
         allow_origins=[
             "http://localhost:5173",
-            "https://smartreflect-qc0y78hyt-curtisjesters-projects.vercel.app",
+            "https://smartreflect.vercel.app",
         ],
         allow_credentials=True,
         allow_methods=["*"],
