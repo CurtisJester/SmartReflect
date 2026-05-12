@@ -54,3 +54,5 @@ coverage/
 
 # Others
 playground/
+.claude/
+.vercel/
