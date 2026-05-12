@@ -43,20 +43,21 @@ class MostAddictedResponse(BaseModel):
     age_breakdown: list[MostAddictedBreakdownItem]
 
 
-def _get_screen_time_cohort(conn, order_direction: str, comparison_operator: str, percentile: int):
+def _get_cohort(conn, filter_column: str, order_direction: str, comparison_operator: str, percentile: int):
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) AS c FROM smartphone_usage")
     total_users = int(cursor.fetchone()["c"] or 0)
     cohort_limit = max(1, int(total_users * 0.1))
 
+    threshold_agg = "MIN" if comparison_operator == ">=" else "MAX"
     cursor.execute(
         f"""
-        SELECT {"MIN" if comparison_operator == ">=" else "MAX"}(daily_screen_time_hours) AS threshold
+        SELECT {threshold_agg}({filter_column}) AS threshold
         FROM (
-            SELECT daily_screen_time_hours
+            SELECT {filter_column}
             FROM smartphone_usage
-            WHERE daily_screen_time_hours IS NOT NULL
-            ORDER BY daily_screen_time_hours {order_direction}
+            WHERE {filter_column} IS NOT NULL
+            ORDER BY {filter_column} {order_direction}
             LIMIT ?
         )
         """,
@@ -69,13 +70,13 @@ def _get_screen_time_cohort(conn, order_direction: str, comparison_operator: str
         SELECT
             COUNT(*) AS cohort_users,
             AVG(daily_screen_time_hours) AS avg_screen_time_hours,
-            MIN(daily_screen_time_hours) AS min_screen_time_hours,
-            MAX(daily_screen_time_hours) AS max_screen_time_hours,
+            MIN({filter_column}) AS min_screen_time_hours,
+            MAX({filter_column}) AS max_screen_time_hours,
             AVG(sleep_hours) AS avg_sleep_hours,
             AVG(notifications_per_day) AS avg_notifications_per_day,
             AVG(addicted_label) * 100.0 AS pct_addicted
         FROM smartphone_usage
-        WHERE daily_screen_time_hours {comparison_operator} ?
+        WHERE {filter_column} {comparison_operator} ?
         """,
         (threshold,),
     )
@@ -86,7 +87,7 @@ def _get_screen_time_cohort(conn, order_direction: str, comparison_operator: str
         f"""
         SELECT addiction_level AS label, COUNT(*) AS c
         FROM smartphone_usage
-        WHERE daily_screen_time_hours {comparison_operator} ?
+        WHERE {filter_column} {comparison_operator} ?
           AND addiction_level IS NOT NULL
           AND LOWER(TRIM(addiction_level)) != 'none'
         GROUP BY addiction_level
@@ -116,7 +117,7 @@ def _get_screen_time_cohort(conn, order_direction: str, comparison_operator: str
             END AS sort_key,
             COUNT(*) AS c
         FROM smartphone_usage
-        WHERE daily_screen_time_hours {comparison_operator} ? AND age IS NOT NULL
+        WHERE {filter_column} {comparison_operator} ? AND age IS NOT NULL
         GROUP BY label, sort_key
         ORDER BY sort_key
         """,
@@ -180,9 +181,14 @@ def get_summary(conn = Depends(get_db)):
 
 @router.get("/most_addicted", response_model=MostAddictedResponse)
 def get_most_addicted(conn = Depends(get_db)):
-    return _get_screen_time_cohort(conn, "DESC", ">=", 90)
+    return _get_cohort(conn, "daily_screen_time_hours", "DESC", ">=", 90)
 
 
 @router.get("/least_addicted", response_model=MostAddictedResponse)
 def get_least_addicted(conn = Depends(get_db)):
-    return _get_screen_time_cohort(conn, "ASC", "<=", 10)
+    return _get_cohort(conn, "daily_screen_time_hours", "ASC", "<=", 10)
+
+
+@router.get("/weekend_maxxing", response_model=MostAddictedResponse)
+def get_weekend_maxxing(conn = Depends(get_db)):
+    return _get_cohort(conn, "weekend_screen_time", "DESC", ">=", 90)

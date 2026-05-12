@@ -271,7 +271,6 @@ code {
 .explore-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .explore-panel-header {
@@ -288,6 +287,57 @@ code {
 .explore-panel-header span {
   color: var(--text);
   font-size: 13px;
+}
+
+.explore-panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.drawer-toggle:hover {
+  color: var(--text-h);
+}
+
+.drawer-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.drawer-toggle.open svg {
+  transform: rotate(180deg);
+}
+
+.drawer-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.2s ease, margin-top 0.2s ease;
+  margin-top: 14px;
+}
+
+.drawer-body.closed {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+}
+
+.drawer-body-inner {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .filter-group {
@@ -350,6 +400,33 @@ code {
   color: var(--text-h);
   font-size: 13px;
   font-weight: 600;
+}
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-th:hover {
+  color: var(--accent);
+}
+
+.sort-arrows {
+  display: inline-flex;
+  flex-direction: column;
+  margin-left: 5px;
+  vertical-align: middle;
+  gap: 1px;
+}
+
+.sort-arrow {
+  font-size: 8px;
+  line-height: 1;
+  color: var(--border);
+}
+
+.sort-arrow.active {
+  color: var(--accent);
 }
 
 .data-table td {

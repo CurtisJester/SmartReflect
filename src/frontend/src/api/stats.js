@@ -16,6 +16,8 @@ export const getMostAddicted = () => getJson('/stats/most_addicted');
 
 export const getLeastAddicted = () => getJson('/stats/least_addicted');
 
+export const getWeekendMaxxing = () => getJson('/stats/weekend_maxxing');
+
 export const getScreenTimeHistogram = () => getJson('/stats/screen_time_histogram');
 
 export const getAddictionBreakdown = () => getJson('/stats/addiction_breakdown');

@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { getLeastAddicted, getMostAddicted } from '../api/stats';
+import { getLeastAddicted, getMostAddicted, getWeekendMaxxing } from '../api/stats';
 import KpiCard from './KpiCard';
 
 function formatNumber(n, digits = 0) {
@@ -57,7 +57,7 @@ function BreakdownChart({ title, subtitle, items }) {
   );
 }
 
-function DeepDiveSection({ title, subtitle, data, isLoading, error, cohortFootnote, cohortLabel }) {
+function DeepDiveSection({ title, subtitle, data, isLoading, error, cohortFootnote, cohortLabel, rangeLabel = 'Daily screen time range' }) {
   const kpiProps = (value, unit, digits) => ({
     loading: isLoading,
     error,
@@ -81,7 +81,7 @@ function DeepDiveSection({ title, subtitle, data, isLoading, error, cohortFootno
           }
         />
         <KpiCard
-          label="Daily screen time range"
+          label={rangeLabel}
           {...kpiProps(formatRange(data?.min_screen_time_hours, data?.max_screen_time_hours, 2), 'hrs')}
         />
         <KpiCard label="Avg sleep" {...kpiProps(data?.avg_sleep_hours, 'hrs', 2)} />
@@ -120,6 +120,10 @@ function DeepDive() {
     queryKey: ['least_addicted'],
     queryFn: getLeastAddicted,
   });
+  const weekendMaxxing = useQuery({
+    queryKey: ['weekend_maxxing'],
+    queryFn: getWeekendMaxxing,
+  });
 
   return (
     <div className="dashboard">
@@ -141,6 +145,17 @@ function DeepDive() {
         error={leastAddicted.error}
         cohortFootnote="Bottom 10%"
         cohortLabel="low screen-time users"
+      />
+      <hr className="section-divider" />
+      <DeepDiveSection
+        title="Weekend Maxxing"
+        subtitle="Stats and charts for users in the top 10th percentile of weekend screen time."
+        data={weekendMaxxing.data}
+        isLoading={weekendMaxxing.isLoading}
+        error={weekendMaxxing.error}
+        cohortFootnote="Top 10%"
+        cohortLabel="high weekend screen-time users"
+        rangeLabel="Weekend screen time range"
       />
     </div>
   );

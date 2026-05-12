@@ -86,6 +86,8 @@ async def explore(
     addiction_level: str | None = None,
     addicted_label: int | None = Query(default=None, ge=0, le=1),
     limit: int = Query(default=100, ge=1, le=500),
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
     conn = Depends(get_db),
 ):
     filters = []
@@ -102,9 +104,12 @@ async def explore(
             values.append(value)
 
     where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+    order_col = sort_by if sort_by in _EXPLORE_COLUMNS else "transaction_id"
+    order_dir = "DESC" if sort_dir == "desc" else "ASC"
+
     cursor = conn.cursor()
     cursor.execute(
-        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY transaction_id LIMIT ?",
+        f"SELECT * FROM smartphone_usage {where_clause} ORDER BY {order_col} {order_dir} LIMIT ?",
         (*values, limit),
     )
     rows = [dict(row) for row in cursor.fetchall()]
