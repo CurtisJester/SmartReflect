@@ -36,6 +36,7 @@ def get_app(data_csv_path: Path) -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"]
     )
 
     # Setup Routes /src/backend/routes
