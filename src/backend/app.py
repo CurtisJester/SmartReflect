@@ -29,7 +29,10 @@ def get_app(data_csv_path: Path) -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],  # Vite default port
+        allow_origins=[
+            "http://localhost:5173",
+            "https://smartreflect-qc0y78hyt-curtisjesters-projects.vercel.app",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
