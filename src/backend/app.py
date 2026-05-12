@@ -9,21 +9,22 @@ from pathlib import Path
 def get_app(data_csv_path: Path) -> FastAPI:
     """
     Create and configure the FastAPI application.
-    
+
     Args:
         data_csv_path: Path to the dataset CSV file
         database_path: Path to the database file
     Returns:
         Configured FastAPI application
     """
+
     @asynccontextmanager
-    async def lifespan(_app: FastAPI):
+    async def lifespan(app: FastAPI):
         # Initialize database on startup
         init_db(data_csv_path)
         yield
-    
+
     app = FastAPI(lifespan=lifespan)
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,

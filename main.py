@@ -1,4 +1,4 @@
-from config import toml_init, get_database_path
+from config import toml_init
 from src.backend.app import get_app
 import pandas as pd
 
